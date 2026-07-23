@@ -1,0 +1,19 @@
+{
+  "name": "unseen-gemini-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A public, free, single-request version of Miguel Castro's Unseen reading method.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "check": "node --check server.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "express": "^5.1.0"
+  }
+}
