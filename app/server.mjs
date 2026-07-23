@@ -157,56 +157,24 @@ function buildPrompt(text) {
   return `${systemPrompt}\n\nMATERIAL A LEER\n---\n${text}\n---\n\nDevuelve únicamente el objeto JSON solicitado.`;
 }
 
-function extractText(response) {
-  if (typeof response?.text === "string") return response.text;
-  if (typeof response?.outputText === "string") return response.outputText;
-  if (typeof response?.output_text === "string") return response.output_text;
-  return "";
-}
-
-async function generateReading(text) {
-  const common = {
-    model: MODEL,
-    contents: buildPrompt(text)
-  };
-
-  try {
-    const response = await ai.models.generateContent({
-      ...common,
-      config: {
-        temperature: 0.45,
-        maxOutputTokens: 1800,
-        responseFormat: {
-          text: {
-            mimeType: "application/json",
-            schema: responseSchema
-          }
-        }
-      }
-    });
-    return extractText(response);
-  } catch (error) {
-    const message = String(error?.message || "");
-    const compatibilityError = /responseFormat|unknown field|invalid argument/i.test(message);
-    if (!compatibilityError) throw error;
-
-    const response = await ai.models.generateContent({
-      ...common,
-      config: {
-        temperature: 0.45,
-        maxOutputTokens: 1800,
-        responseMimeType: "application/json",
-        responseJsonSchema: responseSchema
-      }
-    });
-    return extractText(response);
-  }
-}
-
 function validateOutput(value) {
   const fields = ["evidence", "interpretation", "hypothesis", "tension", "opportunity", "question"];
   if (!value || typeof value !== "object") return false;
   return fields.every((field) => typeof value[field] === "string" && value[field].trim().length > 0);
+}
+
+async function generateReading(text) {
+  const response = await ai.models.generateContent({
+    model: MODEL,
+    contents: buildPrompt(text),
+    config: {
+      temperature: 0.45,
+      maxOutputTokens: 1800,
+      responseMimeType: "application/json",
+      responseJsonSchema: responseSchema
+    }
+  });
+  return response.text || "";
 }
 
 app.get("/health", (_req, res) => {
