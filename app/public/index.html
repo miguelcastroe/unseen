@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Unseen es una herramienta gratuita para leer lo que un brief, una idea o un problema todavía no dice.">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'">
+  <title>Unseen · una lectura de lo que todavía no aparece</title>
+  <style>
+    :root {
+      --ink: #0b0b0b;
+      --gray: #686868;
+      --soft: #969696;
+      --line: #dedede;
+      --paper: #ffffff;
+      --wash: #f6f6f4;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.62;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+    .wrap { width: min(100% - 40px, 700px); margin: 0 auto; padding: 58px 0 96px; }
+    .eyebrow { margin: 0 0 18px; color: var(--gray); }
+    h1 { max-width: 28ch; margin: 0 0 15px; font-size: clamp(22px, 4vw, 34px); font-weight: 400; line-height: 1.14; letter-spacing: -0.025em; }
+    .lede { max-width: 56ch; margin: 0 0 38px; color: var(--gray); }
+    .privacy { margin: 0 0 30px; padding: 14px 16px; background: var(--wash); color: var(--gray); font-size: 13px; line-height: 1.5; }
+    .field-label { display: block; margin: 0 0 9px; color: var(--gray); }
+    textarea {
+      width: 100%;
+      min-height: 210px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 0;
+      outline: none;
+      resize: vertical;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.62;
+    }
+    textarea:focus { border-color: var(--ink); }
+    textarea::placeholder { color: var(--soft); }
+    .field-meta { display: flex; justify-content: space-between; gap: 20px; margin-top: 7px; color: var(--gray); font-size: 12px; }
+    .actions { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+    .button {
+      min-height: 44px;
+      padding: 10px 22px;
+      border: 1px solid var(--ink);
+      border-radius: 0;
+      background: var(--paper);
+      cursor: pointer;
+      transition: opacity 150ms ease, background 150ms ease, color 150ms ease;
+    }
+    .button:hover { background: var(--ink); color: var(--paper); }
+    .button:disabled { opacity: .35; cursor: default; background: var(--paper); color: var(--ink); }
+    .button-secondary { border-color: var(--line); color: var(--gray); }
+    .button-secondary:hover { border-color: var(--ink); }
+    .scanline { display: none; height: 1px; margin-top: 38px; overflow: hidden; position: relative; background: var(--line); }
+    .scanline.active { display: block; }
+    .scanline::after { content: ""; position: absolute; inset: 0 auto 0 -35%; width: 35%; background: var(--ink); animation: sweep 1.1s ease-in-out infinite; }
+    @keyframes sweep { to { left: 100%; } }
+    .status { display: none; margin: 20px 0 0; color: var(--gray); }
+    .status.active { display: block; }
+    .output { display: none; margin-top: 44px; }
+    .output.active { display: block; }
+    .output-header { display: flex; justify-content: space-between; align-items: baseline; gap: 20px; margin-bottom: 4px; }
+    .output-title { margin: 0; font-size: 13px; font-weight: 400; color: var(--gray); }
+    .section { padding: 27px 0; border-top: 1px solid var(--line); }
+    .section-label { margin: 0 0 10px; color: var(--gray); font-size: 13px; }
+    .section p:last-child { margin: 0; white-space: pre-wrap; }
+    .question { margin-top: 12px; padding: 22px; background: var(--wash); border-top: 0; }
+    .question .section-label { color: var(--ink); }
+    .footer-note { margin-top: 58px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--gray); font-size: 13px; }
+    .footer-note p { margin: 0 0 9px; }
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 28px, 700px); padding-top: 36px; }
+      .field-meta, .output-header { align-items: flex-start; flex-direction: column; gap: 4px; }
+      .actions { align-items: stretch; flex-direction: column; }
+      .button { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .scanline::after { animation-duration: 2.4s; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="eyebrow">MCE® · Unseen</p>
+    <h1>Una lectura de lo que el material todavía no dice.</h1>
+    <p class="lede">Pega un brief, un reporte, una nota interna o una idea a medio camino. Unseen separa evidencia, interpretación, hipótesis, tensión y oportunidad. No crea la idea por ti.</p>
+    <p class="privacy">Esta versión utiliza Gemini en su nivel gratuito. No pegues información confidencial, datos personales ni materiales sujetos a acuerdos de confidencialidad.</p>
+    <form id="reading-form" novalidate>
+      <label class="field-label" for="input-text">Material a leer</label>
+      <textarea id="input-text" name="text" maxlength="6000" placeholder="Pega aquí un brief, una idea a medio camino, un reporte o un problema que todavía pueda cambiar." aria-describedby="field-help charcount"></textarea>
+      <div class="field-meta">
+        <span id="field-help">Entre 80 y 6,000 caracteres.</span>
+        <span id="charcount" aria-live="polite">0 / 6,000</span>
+      </div>
+      <div class="actions">
+        <button class="button" id="submit-btn" type="submit">Leer</button>
+        <button class="button button-secondary" id="clear-btn" type="button">Limpiar</button>
+      </div>
+    </form>
+    <div class="scanline" id="scanline" aria-hidden="true"></div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <section class="output" id="output" aria-label="Lectura de Unseen">
+      <div class="output-header">
+        <p class="output-title">Lectura condensada</p>
+        <button class="button button-secondary" id="copy-btn" type="button">Copiar lectura</button>
+      </div>
+      <div class="section"><p class="section-label">Evidencia</p><p id="out-evidence"></p></div>
+      <div class="section"><p class="section-label">Interpretación</p><p id="out-interpretation"></p></div>
+      <div class="section"><p class="section-label">Hipótesis a validar</p><p id="out-hypothesis"></p></div>
+      <div class="section"><p class="section-label">Tensión</p><p id="out-tension"></p></div>
+      <div class="section"><p class="section-label">Oportunidad latente</p><p id="out-opportunity"></p></div>
+      <div class="section question"><p class="section-label">Pregunta para continuar</p><p id="out-question"></p></div>
+    </section>
+    <footer class="footer-note">
+      <p>Unseen condensa en una sola lectura cinco etapas que, en la versión completa, requieren validación humana entre una y otra.</p>
+      <p>La herramienta puede equivocarse. Usa la lectura como punto de partida, no como veredicto.</p>
+    </footer>
+  </main>
+  <script>
+    const form = document.getElementById("reading-form");
+    const textarea = document.getElementById("input-text");
+    const charcount = document.getElementById("charcount");
+    const submitBtn = document.getElementById("submit-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const copyBtn = document.getElementById("copy-btn");
+    const scanline = document.getElementById("scanline");
+    const status = document.getElementById("status");
+    const output = document.getElementById("output");
+    const MAX_CHARS = 6000;
+    const MIN_CHARS = 80;
+    let latestResult = null;
+    const fields = {
+      evidence: document.getElementById("out-evidence"),
+      interpretation: document.getElementById("out-interpretation"),
+      hypothesis: document.getElementById("out-hypothesis"),
+      tension: document.getElementById("out-tension"),
+      opportunity: document.getElementById("out-opportunity"),
+      question: document.getElementById("out-question")
+    };
+    textarea.addEventListener("input", () => {
+      charcount.textContent = `${textarea.value.length.toLocaleString("es")} / ${MAX_CHARS.toLocaleString("es")}`;
+    });
+    function setBusy(isBusy) {
+      submitBtn.disabled = isBusy;
+      clearBtn.disabled = isBusy;
+      textarea.disabled = isBusy;
+      scanline.classList.toggle("active", isBusy);
+      submitBtn.textContent = isBusy ? "Leyendo" : "Leer";
+    }
+    function showStatus(message) {
+      status.textContent = message;
+      status.classList.toggle("active", Boolean(message));
+    }
+    function renderResult(result) {
+      latestResult = result;
+      Object.entries(fields).forEach(([key, element]) => { element.textContent = result[key] || ""; });
+      output.classList.add("active");
+      output.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = textarea.value.trim();
+      output.classList.remove("active");
+      latestResult = null;
+      if (text.length < MIN_CHARS) {
+        showStatus(`Incluye al menos ${MIN_CHARS} caracteres para poder hacer una lectura útil.`);
+        textarea.focus();
+        return;
+      }
+      showStatus("");
+      setBusy(true);
+      try {
+        const response = await fetch("/api/unseen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "La lectura no pudo completarse.");
+        renderResult(payload);
+      } catch (error) {
+        showStatus(error.message || "La lectura no pudo completarse. Inténtalo nuevamente.");
+      } finally {
+        setBusy(false);
+      }
+    });
+    clearBtn.addEventListener("click", () => {
+      textarea.value = "";
+      charcount.textContent = `0 / ${MAX_CHARS.toLocaleString("es")}`;
+      output.classList.remove("active");
+      latestResult = null;
+      showStatus("");
+      textarea.focus();
+    });
+    copyBtn.addEventListener("click", async () => {
+      if (!latestResult) return;
+      const labels = {
+        evidence: "Evidencia",
+        interpretation: "Interpretación",
+        hypothesis: "Hipótesis a validar",
+        tension: "Tensión",
+        opportunity: "Oportunidad latente",
+        question: "Pregunta para continuar"
+      };
+      const text = Object.keys(labels).map((key) => `${labels[key]}\n${latestResult[key]}`).join("\n\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = "Copiado";
+        setTimeout(() => { copyBtn.textContent = "Copiar lectura"; }, 1400);
+      } catch {
+        showStatus("No se pudo copiar automáticamente. Selecciona el texto de la lectura.");
+      }
+    });
+  </script>
+</body>
+</html>
